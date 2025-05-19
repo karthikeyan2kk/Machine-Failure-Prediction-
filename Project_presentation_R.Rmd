@@ -1,0 +1,326 @@
+---
+title: "Machine Failure Prediction using R"
+author: "Suraj Babu Thimma Krishnaram, Karthikeyan Saravanan"
+date: "29 - Apr - 2025"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load all libraries here
+library(tidyverse)
+library(tigerstats)
+library(MASS)
+library(MLmetrics)
+library(ggplot2)
+```
+
+# Dataset loading and Displaying top 6 rows
+```{r}
+# Loading the dataset
+df <- read.csv("C:/Users/karth/Downloads/machinedata.csv")
+
+# Structure
+str(df)
+
+# Display first few rows
+head(df)
+```
+
+# Summary
+```{r}
+# Summary
+summary(df)
+```
+
+# Check missing values
+```{r}
+# Check missing values
+colSums(is.na(df))
+```
+
+# Histogram
+```{r}
+# Structure
+str(df$`Torque..Nm.`)
+# Histogram of Torque
+histogram(df$`Torque..Nm.`,
+          breaks = seq(min(df$`Torque..Nm.`), max(df$`Torque..Nm.`), l = 11),
+          main = "Histogram of Torque",
+          xlab = "Torque (Nm)",
+          col = "Red")
+
+histogram(df$`Torque..Nm.`,
+          breaks = seq(min(df$`Torque..Nm.`), max(df$`Torque..Nm.`), l = 21),
+          main = "Histogram of Torque (More bins)",
+          xlab = "Torque (Nm)",
+          col ="Red")
+
+histogram(df$`Air.temperature..K.`,
+          breaks = seq(min(df$`Air.temperature..K.`), max(df$`Air.temperature..K.`), l = 21),
+          main = "Histogram of Air temperature",
+          xlab = "Air temperature (K)",
+          col = "Pink")
+
+histogram(df$`Rotational.speed..rpm`,
+          breaks = seq(min(df$`Rotational.speed..rpm`), max(df$`Rotational.speed..rpm`), l = 21),
+          main = "Histogram of Rotational speed",
+          xlab = "Rotational speed (RPM)",
+          col = "Yellow")
+
+histogram(df$`Tool.wear..min.`,
+          breaks = seq(min(df$`Tool.wear..min.`), max(df$`Tool.wear..min.`), l = 21),
+          main = "Histogram of Tool wear",
+          xlab = "Tool wear (min)",
+          col = "Green")
+
+```
+
+# Boxplot for Tool Wear
+```{r}
+# Boxplot for Tool Wear
+par(mfrow = c(1, 1))
+
+boxplot(df$`Tool.wear..min.`, main = "Boxplot of Tool Wear", ylab = "Tool Wear (min)")
+
+abline(h = min(df$`Tool.wear..min.`), col = "Blue")
+abline(h = max(df$`Tool.wear..min.`), col = "Yellow")
+abline(h = median(df$`Tool.wear..min.`), col = "Green")
+abline(h = quantile(df$`Tool.wear..min.`, c(0.25, 0.75)), col = "Red")
+
+# Boxplot for Torque
+par(mfrow = c(1, 1))
+
+boxplot(df$`Torque..Nm.`, main = "Boxplot of Torque", ylab = "Torque (Nm)")
+
+abline(h = min(df$`Torque..Nm.`), col = "Blue")
+abline(h = max(df$`Torque..Nm.`), col = "Yellow")
+abline(h = median(df$`Torque..Nm.`), col = "Green")
+abline(h = quantile(df$`Torque..Nm.`, c(0.25, 0.75)), col = "Red")
+
+```
+
+## Boxplot of Torque by Type (ggplot2)
+```{r}
+# Boxplot of Torque by Type (ggplot2)
+ggplot(data = df) +
+  geom_boxplot(mapping = aes(x = reorder(Type, `Torque..Nm.`, FUN = median), y = `Torque..Nm.`)) +
+  coord_flip() +
+  labs(title = "Boxplot of Torque by Type (Ordered by Median)",
+       x = "Type (Ordered by Median Torque)",
+       y = "Torque (Nm)")
+
+```
+
+# Overlay histogram of Torque by Type
+```{r}
+# Overlay histogram of Torque by Type
+ggplot(data = df, aes(x = `Torque..Nm.`, fill = Type)) +
+  geom_histogram(bins = 30, color = "black") +
+  labs(title = "Overlay Histogram of Torque by Type",
+       x = "Torque (Nm)",
+       y = "Count") +
+  theme_minimal()
+
+```
+
+
+# Overlay histogram for Process Temperature by Type
+```{r}
+# Overlay histogram for Process Temperature by Type
+ggplot(data = df, aes(x = `Process.temperature..K.`, fill = Type)) +
+  geom_histogram(bins = 30, color = "black") +
+  labs(title = "Overlay Histogram of Process Temperature by Type",
+       x = "Process Temperature (K)",
+       y = "Count") +
+  theme_minimal()
+```
+
+# Overlay histogram for RPM by Type
+```{r}
+# Overlay histogram for Process RPM by Type
+ggplot(data = df, aes(x = `Rotational.speed..rpm.`, fill = Type)) +
+  geom_histogram(bins = 30, color = "black") +
+  labs(title = "Overlay Histogram of Process RPM by Type",
+       x = "RPM",
+       y = "Count") +
+  theme_minimal()
+```
+
+# Q-Q Plot
+```{r}
+# Q-Q Plot for Air Temperature
+qqnorm(df$`Air.temperature..K.`)
+qqline(df$`Air.temperature..K.`)
+
+# Q-Q Plot for Rotational.speed
+qqnorm(df$`Rotational.speed..rpm.`)
+qqline(df$`Rotational.speed..rpm.`)
+
+# Q-Q Plot for Torque
+qqnorm(df$`Torque..Nm.`)
+qqline(df$`Torque..Nm.`)
+
+```
+
+# Hypothesis Testing (T and F test)
+
+Boxplot for M and L types
+
+```{r}
+
+torque_M <- df[df$Type == "M", "Torque..Nm."]
+torque_L <- df[df$Type == "L", "Torque..Nm."]
+boxplot(torque_M, torque_L)
+
+```
+
+# F test
+Null Hypothesis (H₀):         
+The variance of torque between Product Type M and Product Type L are same.
+
+Alternate Hypothesis (H₁):   
+The variance of torque between Product Type M and Product Type L are different.
+
+The hypothesis testing should be \[\begin{align*} H_0:\sigma^2_{M}/\sigma^2_{L} & = 1, \\ H_1:\sigma^2_{M}/\sigma^2_{L} & \ne 1, \end{align*}\]
+
+```{r}
+#F test
+var.test(torque_M, torque_L)
+```
+Based on the results, we know the variance are almost same. Since the p-value (0.9013) > 0.05, we fail to reject the null hypothesis.There is no significant difference in the torque variance between Product Type M and Product Type L. Their variances can be considered statistically equal.
+
+
+
+# T test
+Null Hypothesis (H₀):         
+There is no difference in the mean torque between Product Type M and Product Type L. 
+
+Alternate Hypothesis (H₁):   
+There is a difference in the mean torque between Product Type M and Product Type L.
+
+The hypotheis test is \[\begin{align*} H_0: \mu_{AR}-\mu_{CA} & = 0, \\ H_1: \mu_{AR}-\mu_{CA} & \ne 0, \end{align*}\]
+
+```{r}
+t.test(torque_M, torque_L, var.equal = TRUE)
+```
+Since p-value = 0.9265 > 0.05, we fail to reject null hypothesis. The mean torque in two type M, L are quite same. The 95% confidence interval includes 0, also indicating no significant difference.
+
+
+# Linear Regression Modeling
+
+```{r}
+df_filtered <- df[, c("Air.temperature..K.", 
+                      "Process.temperature..K.", 
+                      "Rotational.speed..rpm.", 
+                      "Tool.wear..min.", 
+                      "Torque..Nm.")]
+
+#splitting into Training and test dataset
+
+i <- sample(2, nrow(df_filtered), replace = TRUE, prob = c(0.7, 0.3))
+Training <- df_filtered[i == 1, ]  # 70% training set
+test <- df_filtered[i == 2, ]      # 30% test set
+summary(Training)
+summary(test)
+```
+
+# Pairs plot and Correlation
+```{r}
+# Pairs plot and Correlation
+numeric_cols <- sapply(Training, is.numeric)
+pairs(Training[, numeric_cols], lower.panel = NULL)
+cor(Training[, sapply(Training, is.numeric)])
+```
+
+
+# Full Linear Model
+```{r}
+# Full Linear Model
+fitlm <- lm(`Torque..Nm.` ~ ., data = Training)
+summary(fitlm)
+```
+
+
+# Diagnostic Plots
+```{r}
+# Diagnostic Plots
+par(mfrow = c(2, 2))
+plot(fitlm)
+```
+
+# Predictions and Evaluation
+```{r}
+# Predictions and Evaluation
+ypred <- predict(fitlm, newdata = test)
+MAE(test$`Torque..Nm.`, ypred)
+MSE(test$`Torque..Nm.`, ypred)
+
+```
+
+# Stepwise Regression
+
+## Forward selection
+```{r}
+#Forward selection
+intercept_only <- lm(`Torque..Nm.` ~ 1, data = Training[,1:5])
+all <- lm(`Torque..Nm.` ~ ., data = Training[,1:5])
+forward <- stepAIC(intercept_only, direction = "forward", scope = formula(all))
+
+# view results of forward selection
+forward$anova
+summary(forward)
+```
+
+```{r}
+#MSE AND MAE
+ypred_forward <- predict(object = forward, newdata = test)
+MAE(y_pred = ypred_forward, y_true = test$Torque..Nm.)
+MSE(y_pred = ypred_forward, y_true = test$Torque..Nm.)
+```
+Conclusion
+
+Using forward stepwise selection based on AIC, the final linear regression model predicting torque includes rotational speed and air temperature. Rotational speed was the dominant predictor, substantially reducing the AIC. Adding air temperature provided a very small improvement. Other variables were excluded as they did not improve model fit.
+
+
+# Backward selection
+```{r}
+#Backward selection
+backward <- stepAIC (all, direction='backward')
+
+#view results of backward selection
+backward$anova
+summary(backward)
+```
+
+```{r}
+#MSE AND MAE
+ypred_backward<- predict(object = backward, newdata = test)
+MAE(y_pred = ypred_backward, y_true = test$Torque..Nm.)
+MSE(y_pred = ypred_backward, y_true = test$Torque..Nm.)
+```
+Coclusion
+
+Using backward stepwise selection based on AIC, the final linear regression model predicting torque retained only rotational speed and air temperature. Initially, all predictors were included, but process temperature and tool wear were sequentially removed as they did not significantly improve model fit. Rotational speed remained the strongest predictor, and air temperature contributed a minor improvement.
+
+
+# Both
+```{r}
+#Both
+both <- stepAIC(intercept_only, direction = "both", scope = formula(all), trace = 0)
+both$anova
+summary(both)
+```
+
+```{r}
+# MAE AND MSE
+ypred_both<- predict(object = both, newdata = test)
+MAE(y_pred = ypred_both, y_true = test$Torque..Nm.)
+MSE(y_pred = ypred_both, y_true = test$Torque..Nm.)
+```
+Conclusion
+
+Using both-direction stepwise selection based on AIC, the final linear regression model included rotational speed and air temperature as the only predictors of torque. Starting from a null model and considering both forward additions and backward eliminations, the procedure consistently identified rotational speed as the dominant variable. Air temperature contributed a minor improvement to model fit, while other variables were excluded due to negligible impact on prediction accuracy.
+
+Both forward and backward stepwise selection methods identified the same final model predicting Torque..Nm. based on Rotational.speed..rpm. and Air.temperature..K.. This consistency strengthens the reliability of the final model. Rotational.speed..rpm. was found to be the most critical predictor, while Air.temperature..K. provided a minor but measurable improvement.
