@@ -1,7 +1,6 @@
 ---
 title: "Machine Failure Prediction using R"
-author: "Suraj Babu Thimma Krishnaram, Karthikeyan Saravanan"
-date: "29 - Apr - 2025"
+author: "Karthikeyan Saravanan"
 output: slidy_presentation
 ---
 
